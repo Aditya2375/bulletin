@@ -16,7 +16,7 @@ Open `index.html` in a browser, or serve the folder statically. Everything is lo
 
 ## Data & honesty
 
-Seed listings in `events.js` were checked against their public source pages on 27 Sept 2026. Where a source had not published firm dates, the card says "dates TBA" rather than guessing. Entries marked ★ going come from plans the user shared with Instinct (relayed September 2026), not from any calendar scraping — edit or remove them in `COMMITTED` in `events.js` if plans changed.
+Seed listings in `events.js` were checked against their public source pages on 27 Sept 2026. Where a source had not published firm dates, the card says "dates TBA" rather than guessing. Entries marked ★ going are hackathons the user registered for himself (per his own WhatsApp with Instinct, September 2026) — edit or remove them in `COMMITTED` in `events.js` if plans changed.
 
 ## Going live (ingestion architecture)
 

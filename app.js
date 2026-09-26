@@ -28,13 +28,12 @@ function score(ev) {
 
 function clash(ev) {
   if (ev.committed) return null;
-  if (ev.tba && ev.end.slice(0,7) !== ev.start.slice(0,7)) {
-    // broad TBA window: only flag if a committed date falls inside the window
-    const hit = MINE.find(m => m.start >= ev.start && m.start <= ev.end && (ev.city === m.city || ev.city === "online"));
-    return hit ? "dates TBA, but the window covers " + hit.name.toLowerCase() : null;
-  }
+  const days = (new Date(ev.end) - new Date(ev.start)) / 864e5;
+  if (ev.tba && days > 14) return null; /* window too broad to honestly claim a clash */
   const hit = MINE.find(m => overlaps(ev, m) && (ev.city === m.city || ev.city === "online"));
-  return hit ? "clashes with " + hit.name.toLowerCase() + (ev.city === "online" ? " — online, so survivable" : "") : null;
+  if (!hit) return null;
+  return (ev.tba ? "dates TBA, but the window covers " : "clashes with ") +
+    hit.name.toLowerCase() + (ev.city === "online" ? " — online, so survivable" : "");
 }
 
 function renderChips() {
@@ -70,7 +69,7 @@ function renderBoard() {
   $("#board").innerHTML = list.map(({ ev, s }) => {
     const c = clash(ev);
     const dates = ev.tba
-      ? `<span class="tba">dates TBA — ${ev.start.slice(0,4) === "2026" ? "expected " + fmt(ev.start).split(" ")[1] + "ish" : ""}</span>`
+      ? `<span class="tba">dates TBA — ${ev.start.slice(0,4) === "2026" ? "expected in " + fmt(ev.start).split(" ")[1] : ""}</span>`
       : `${fmt(ev.start)}${ev.end !== ev.start ? " → " + fmt(ev.end) : ""}`;
     return `<article class="card ${ev.committed ? "mine" : ""}">
       <div class="src"><span>${ev.source.name}</span>${ev.committed ? '<span class="you">★ going</span>' : ""}</div>
