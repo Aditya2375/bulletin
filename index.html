@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Bulletin — Bengaluru, for builders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,600;0,6..72,800;1,6..72,400;1,6..72,600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="topline mono"><span id="edition">Bengaluru edition</span><span id="dateline"></span><span>№ 27</span></div>
+  <h1>The Bulletin</h1>
+  <p class="dekk">Every hackathon, meetup and builder gathering worth your Saturday — read from a dozen sites so you read one.</p>
+  <div class="rule"></div>
+  <p class="record mono">On the record: listings are seeded from real source pages checked on 27 Sept 2026. Where a date is still to be announced, the card says so. Entries marked “going” are plans you shared with us — the wire checks clashes against those.</p>
+</header>
+
+<nav class="controls" id="controls">
+  <section class="panel" id="profile-panel">
+    <h2 class="kicker">Your interests</h2>
+    <div class="chips" id="interest-chips"></div>
+    <h2 class="kicker">Where</h2>
+    <div class="chips" id="place-chips"></div>
+    <div class="profile-line mono" id="profile-line"></div>
+  </section>
+  <section class="panel">
+    <h2 class="kicker">Search the wire</h2>
+    <div class="searchrow"><input id="q" type="search" placeholder="try “agentic”, “design”, “24-hour”…" autocomplete="off"></div>
+    <div class="outlinks mono" id="outlinks"></div>
+    <h2 class="kicker">Filters</h2>
+    <div class="chips small" id="filter-chips"></div>
+  </section>
+</nav>
+
+<main>
+  <div class="sectionhead"><span class="kicker">This season’s board</span><span class="mono" id="count"></span></div>
+  <div id="board" class="board"></div>
+  <div id="empty" class="empty" hidden>Nothing on the wire matches that. Loosen a filter, or search the sources directly above.</div>
+
+  <div class="sectionhead"><span class="kicker">How the wire works</span></div>
+  <section class="sources" id="sources"></section>
+</main>
+
+<footer class="colophon mono">
+  <p>The Bulletin is a local-first reader. Your interests live in this browser, nowhere else. Built for one builder in Bengaluru; works for anyone.</p>
+</footer>
+<script src="events.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
