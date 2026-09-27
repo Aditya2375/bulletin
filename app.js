@@ -1,6 +1,6 @@
 /* The Bulletin — board, matching, clash detection. */
 const $ = s => document.querySelector(s);
-const ALL = [...EVENTS, ...MINE];
+let ALL = [...EVENTS, ...MINE];
 
 const state = {
   interests: new Set(JSON.parse(localStorage.getItem("bul.interests") || '["ai","hackathon","web"]')),
@@ -115,5 +115,68 @@ document.addEventListener("click", e => {
 let deb;
 $("#q").addEventListener("input", e => { clearTimeout(deb); deb = setTimeout(() => { state.q = e.target.value; renderBoard(); renderOutlinks(); }, 160); });
 
+/* ————— live wire database (Supabase) with baked seed as offline fallback ————— */
+const SB_URL = "https://iljapbrjcxhtymtkiuea.supabase.co";
+const SB_KEY = "sb_publishable_bKtD9c5Q0GzMFNOZQ58z8A_WCIxbRt8";
+let liveState = "seed";
+
+function rowToEvent(r) {
+  return {
+    id: r.id, name: r.name, org: r.org,
+    start: r.start_date, end: r.end_date, tba: !!r.tba,
+    mode: r.mode, city: r.city, venue: r.venue || undefined,
+    tags: r.tags || [], fee: r.fee, prize: r.prize, deadline: r.deadline,
+    source: { name: r.source_name, url: r.source_url }, blurb: r.blurb
+  };
+}
+
+function renderDatapill() {
+  const el = $("#datapill");
+  if (el) el.textContent = liveState === "live" ? "· live from the wire db" : "· offline seed cache";
+}
+
+async function loadLive() {
+  try {
+    const r = await fetch(SB_URL + "/rest/v1/events?select=*", { headers: { apikey: SB_KEY } });
+    if (!r.ok) throw new Error("events " + r.status);
+    const rows = await r.json();
+    if (!Array.isArray(rows) || !rows.length) throw new Error("empty wire");
+    ALL = [...rows.map(rowToEvent), ...MINE];
+    liveState = "live";
+  } catch (e) {
+    liveState = "seed";
+  }
+  renderDatapill();
+  renderBoard();
+}
+
+$("#suggest-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const st = $("#suggest-status");
+  const body = {
+    name: $("#sg-name").value.trim(),
+    url: $("#sg-url").value.trim(),
+    city: $("#sg-city").value.trim() || null,
+    start_date: $("#sg-date").value || null,
+    note: $("#sg-note").value.trim() || null
+  };
+  if (body.name.length < 2) { st.textContent = "name's too short"; return; }
+  if (!/^https?:\/\//.test(body.url)) { st.textContent = "url needs to start with https://"; return; }
+  st.textContent = "sending…";
+  try {
+    const r = await fetch(SB_URL + "/rest/v1/submissions", {
+      method: "POST",
+      headers: { apikey: SB_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error("rejected (" + r.status + ")");
+    st.textContent = "in the review queue — thanks";
+    e.target.reset();
+  } catch (err) {
+    st.textContent = "couldn't send: " + err.message;
+  }
+});
+
 $("#dateline").textContent = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-renderChips(); renderBoard(); renderOutlinks(); renderSources();
+renderChips(); renderBoard(); renderOutlinks(); renderSources(); renderDatapill();
+loadLive();

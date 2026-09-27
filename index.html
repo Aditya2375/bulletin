@@ -11,11 +11,11 @@
 </head>
 <body>
 <header class="masthead">
-  <div class="topline mono"><span id="edition">Bengaluru edition</span><span id="dateline"></span><span>№ 27</span></div>
+  <div class="topline mono"><span id="edition">Bengaluru edition</span><span id="dateline"></span><span>№ 27</span><span id="datapill"></span></div>
   <h1>The Bulletin</h1>
   <p class="dekk">Every hackathon, meetup and builder gathering worth your Saturday — read from seven sites so you read one.</p>
   <div class="rule"></div>
-  <p class="record mono">On the record: listings are seeded from real source pages checked on 27 Sept 2026. Where a date is still to be announced, the card says so. Entries marked “going” are plans you shared with us — the wire checks clashes against those.</p>
+  <p class="record mono">On the record: listings are served live from the wire database and were seeded from real source pages checked on 27 Sept 2026 (if the database is unreachable, the same seed shows as an offline cache). Where a date is still to be announced, the card says so. Entries marked “going” are plans you shared with us — the wire checks clashes against those.</p>
 </header>
 
 <nav class="controls" id="controls">
@@ -39,6 +39,16 @@
   <div class="sectionhead"><span class="kicker">This season’s board</span><span class="mono" id="count"></span></div>
   <div id="board" class="board"></div>
   <div id="empty" class="empty" hidden>Nothing on the wire matches that. Loosen a filter, or search the sources directly above.</div>
+
+  <div class="sectionhead"><span class="kicker">Suggest an event</span><span class="mono" id="suggest-status"></span></div>
+  <section class="panel suggest">
+    <form id="suggest-form">
+      <div class="suggrow"><input id="sg-name" placeholder="event name" required maxlength="300" autocomplete="off"><input id="sg-url" type="url" placeholder="https:// — link to the listing" required maxlength="600" autocomplete="off"></div>
+      <div class="suggrow"><input id="sg-city" placeholder="city, or online" maxlength="100" autocomplete="off"><input id="sg-date" type="date" aria-label="start date"><input id="sg-note" placeholder="one-line note (optional)" maxlength="1000" autocomplete="off"></div>
+      <button type="submit" class="go-btn">send it in</button>
+    </form>
+    <p class="mono sugg-note">Suggestions land in a review queue, not straight on the board.</p>
+  </section>
 
   <div class="sectionhead"><span class="kicker">How the wire works</span></div>
   <section class="sources" id="sources"></section>
