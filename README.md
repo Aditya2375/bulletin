@@ -4,7 +4,11 @@ Every hackathon, meetup and builder gathering worth your Saturday — read from 
 
 ## Run it
 
-Open `index.html` in a browser, or serve the folder statically. Everything is local-first; interests live in `localStorage`.
+Open `index.html` in a browser, or serve the folder statically. Interests and filters live in `localStorage`.
+
+## Backend
+
+The board is served live from a Supabase Postgres table (`public.events`) over PostgREST with the project's publishable (browser-safe) key; Row Level Security allows anonymous reads and no anonymous writes. If the database is unreachable the app falls back to the baked seed in `events.js` and says so in the masthead. The "suggest an event" form writes to `public.submissions` (anonymous INSERT only, no reads; check constraints validate shape and URL scheme server-side) — a review queue, not a direct path to the board. The service-role key is never shipped.
 
 ## What's inside
 
