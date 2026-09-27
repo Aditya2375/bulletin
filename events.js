@@ -1,16 +1,14 @@
 /* The Bulletin — seed registry + source adapters.
    Every listing below was checked against its public source page on 27 Sept 2026.
    `tba: true` means the source had not published firm dates at that time — the card
-   says so rather than inventing one. `committed: true` entries are hackathons he registered
-   for himself (per his own WhatsApp with Instinct, Sept 2026), included so clash
-   detection has something to clash against. Edit COMMITTED if plans change. */
+   says so rather than inventing one. `committed: true` entries are neutral example plans,
+   included so clash detection has something to check against. Edit COMMITTED to make them yours. */
 
 const INTERESTS = ["ai", "hackathon", "web", "open-source", "cp", "design", "startups", "hardware"];
 
 const COMMITTED = [
-  { name: "Techfest ZeroCode, Chennai", start: "2026-10-10", end: "2026-10-10", place: "chennai" },
-  { name: "Devforge, Kengeri", start: "2026-10-24", end: "2026-10-24", place: "bengaluru" },
-  { name: "AWS SBG at Atria (RVU still in play)", start: "2026-10-30", end: "2026-10-30", place: "bengaluru" }
+  { name: "Example plan: a weekend hackathon", start: "2026-10-24", end: "2026-10-25", place: "bengaluru" },
+  { name: "Example plan: an online build week", start: "2026-10-09", end: "2026-10-15", place: "online" }
 ];
 
 const EVENTS = [

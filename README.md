@@ -20,7 +20,7 @@ The board is served live from a Supabase Postgres table (`public.events`) over P
 
 ## Data & honesty
 
-Seed listings in `events.js` were checked against their public source pages on 27 Sept 2026. Where a source had not published firm dates, the card says "dates TBA" rather than guessing. Entries marked ★ going are hackathons the user registered for himself (per his own WhatsApp with Instinct, September 2026) — edit or remove them in `COMMITTED` in `events.js` if plans changed.
+Seed listings in `events.js` were checked against their public source pages on 27 Sept 2026. Where a source had not published firm dates, the card says "dates TBA" rather than guessing. Entries marked ★ going are neutral example plans baked into the demo so clash detection has something to check against — edit `COMMITTED` in `events.js` to make them your own.
 
 ## Going live (ingestion architecture)
 
