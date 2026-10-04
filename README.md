@@ -16,6 +16,7 @@ The board is served live from a Supabase Postgres table (`public.events`) over P
 - **Explainable matching**: pick your interests and city; every card shows *why* it matched ("why this: #ai · #hackathon · bengaluru"). Transparent scoring, no black box. A real LLM matcher can replace `score()` later — the shape is already "reasons in, list out".
 - **Clash detection**: events are checked against plans marked as "going" and overlapping cards get a warning (online events get a softer note — you can do those from anywhere).
 - **Cross-site search**: one box searches the wire, and offers the same search as deep links on Luma, Unstop, Devpost and Eventbrite.
+- **My tracker**: anyone can keep a private list of events they are chasing: status, event date, registration deadline, team code, link and note, with live countdowns. It is stored in this browser's localStorage only; nothing is sent to any server. "+ track this" on any card pre-fills it.
 - **Filters**: next 30 days, online / in person, free only, and "you're going".
 
 ## Data & honesty
