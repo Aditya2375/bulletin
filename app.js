@@ -80,7 +80,7 @@ function renderBoard() {
       <div class="tags">${ev.tags.map(t => `<span class="tag">#${t}</span>`).join("")}</div>
       <div class="why">why this: ${s.why.length ? s.why.join(" · ") : "low match — shown anyway"}</div>
       ${c ? `<div class="clash">⚠ ${c}</div>` : ""}
-      ${ev.source.url ? `<a class="goto" href="${ev.source.url}" target="_blank" rel="noopener">Go to the listing ↗</a>` : ""}
+      <div class="cardbtns">${ev.source.url ? `<a class="goto" href="${ev.source.url}" target="_blank" rel="noopener">Go to the listing ↗</a>` : ""}<button class="goto track" type="button" data-track="${ev.id}">+ track this</button></div>
     </article>`;
   }).join("");
 }
@@ -110,6 +110,7 @@ document.addEventListener("click", e => {
   const t = e.target;
   if (t.dataset.i) { state.interests.has(t.dataset.i) ? state.interests.delete(t.dataset.i) : state.interests.add(t.dataset.i); save(); renderChips(); renderBoard(); }
   if (t.dataset.p) { state.place = t.dataset.p; save(); renderChips(); renderBoard(); }
+  if (t.dataset.track) { const ev = ALL.find(x => String(x.id) === t.dataset.track); if (ev && window.bulletinTrack) window.bulletinTrack(ev.name, ev.tba ? "" : ev.start, ev.source.url); }
   if (t.dataset.f) { state.filter = t.dataset.f; renderChips(); renderBoard(); }
 });
 let deb;
