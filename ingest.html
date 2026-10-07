@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Bulletin publisher</title>
+<style>body{font:15px/1.5 system-ui,sans-serif;max-width:720px;margin:2rem auto;padding:0 1rem}textarea{width:100%;height:220px;font:13px monospace}input{width:100%;padding:.5rem;margin:.3rem 0 1rem}button{padding:.6rem 1.2rem}pre{background:#f4f1ea;padding:.8rem;white-space:pre-wrap}</style></head>
+<body><h1>Bulletin publisher</h1>
+<p>Publishes new events to the wire. Needs the publisher token; without it every call is refused.</p>
+<label for="tok">Publisher token</label><input id="tok" type="password" autocomplete="off">
+<label for="ev">Events (JSON array; keys p_name, p_source_url, p_source_name, p_start, p_end, p_tba, p_mode, p_city, p_venue, p_org, p_tags, p_fee, p_prize, p_deadline, p_blurb)</label>
+<textarea id="ev"></textarea><p><button id="go" type="button">Publish</button></p><pre id="out"></pre>
+<script>
+const SB_URL="https://iljapbrjcxhtymtkiuea.supabase.co";
+const SB_KEY="sb_publishable_bKtD9c5Q0GzMFNOZQ58z8A_WCIxbRt8";
+document.getElementById("go").addEventListener("click",async()=>{
+  const out=document.getElementById("out");out.textContent="";
+  let list;try{list=JSON.parse(document.getElementById("ev").value);if(!Array.isArray(list))throw 0}catch(e){out.textContent="Events must be a JSON array.";return}
+  const tok=document.getElementById("tok").value;
+  for(const ev of list){
+    try{
+      const r=await fetch(SB_URL+"/rest/v1/rpc/ingest_event",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json","x-ingest-token":tok},body:JSON.stringify(ev)});
+      out.textContent+=(ev.p_name||"?")+" -> "+(await r.text())+"\n";
+    }catch(e){out.textContent+=(ev.p_name||"?")+" -> error "+e.message+"\n"}
+  }
+  out.textContent+="DONE\n";
+});
+</script></body></html>
