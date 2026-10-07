@@ -40,6 +40,24 @@
   <div id="board" class="board"></div>
   <div id="empty" class="empty" hidden>Nothing on the wire matches that. Loosen a filter, or search the sources directly above.</div>
 
+  <div class="sectionhead" id="tracker"><span class="kicker">My tracker</span><span class="mono" id="tr-count"></span></div>
+  <section class="panel tracker">
+    <p class="tr-intro">Keep your own list of events you are chasing: where you registered, your team code, shortlist status and deadlines. It lives in this browser only.</p>
+    <form id="tr-form">
+      <div class="suggrow"><input id="tr-name" placeholder="event name" required maxlength="120" autocomplete="off"><select id="tr-status" aria-label="status"></select></div>
+      <div class="suggrow">
+        <label class="tr-lab">event date<input id="tr-date" type="date"></label>
+        <label class="tr-lab">registration deadline<input id="tr-deadline" type="date"></label>
+        <label class="tr-lab">team code<input id="tr-team" placeholder="optional" maxlength="80" autocomplete="off"></label>
+      </div>
+      <div class="suggrow"><input id="tr-link" type="url" placeholder="https:// link (optional)" maxlength="600" autocomplete="off"><input id="tr-note" placeholder="note (optional)" maxlength="200" autocomplete="off"></div>
+      <div class="tr-btns"><button type="submit" class="go-btn" id="tr-submit">add to tracker</button><button type="button" class="tr-mini" id="tr-cancel" hidden>cancel edit</button></div>
+    </form>
+    <p class="mono tr-warn" id="tr-warn" hidden>This browser blocked saving, so your list will be lost when you close the tab.</p>
+    <div id="tr-list" class="tr-list"></div>
+    <div id="tr-tools" class="tr-tools mono" hidden><button class="tr-mini" id="tr-export" type="button">download as file</button><button class="tr-mini danger" id="tr-clear" type="button">clear all</button><span>Stored on this device only. Clearing site data erases it.</span></div>
+  </section>
+
   <div class="sectionhead"><span class="kicker">Suggest an event</span><span class="mono" id="suggest-status"></span></div>
   <section class="panel suggest">
     <form id="suggest-form">
@@ -55,9 +73,10 @@
 </main>
 
 <footer class="colophon mono">
-  <p>The Bulletin is a local-first reader. Your interests live in this browser, nowhere else. Built for one builder in Bengaluru; works for anyone.</p>
+  <p>The Bulletin is a local-first reader. Your interests and your tracker live in this browser, nowhere else. Built for one builder in Bengaluru; works for anyone.</p>
 </footer>
 <script src="events.js"></script>
 <script src="app.js"></script>
+<script src="tracker.js"></script>
 </body>
 </html>
