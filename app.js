@@ -75,7 +75,7 @@ function renderBoard() {
       <div class="src"><span>${ev.source.name}</span>${ev.committed ? '<span class="you">★ going</span>' : ""}</div>
       <h3>${ev.source.url ? `<a href="${ev.source.url}" target="_blank" rel="noopener">${ev.name}</a>` : ev.name}</h3>
       <div class="date">${dates}</div>
-      <div class="meta"><span>${ev.mode}${ev.venue ? " · " + ev.venue : ev.city !== "online" ? " · " + ev.city : ""}</span><span>fee: ${ev.fee}</span>${ev.prize !== "—" ? `<span>${ev.prize}</span>` : ""}<span>reg: ${ev.deadline}</span></div>
+      <div class="meta"><span>${ev.mode}${ev.venue ? " · " + ev.venue : ev.city !== "online" ? " · " + ev.city : ""}</span><span>fee: ${ev.fee}</span>${ev.prize !== "—" ? `<span>${ev.prize}</span>` : ""}${ev.deadline && ev.deadline !== "null" ? `<span>reg: ${ev.deadline}</span>` : ""}</div>
       <p class="blurb">${ev.blurb}</p>
       <div class="tags">${ev.tags.map(t => `<span class="tag">#${t}</span>`).join("")}</div>
       <div class="why">why this: ${s.why.length ? s.why.join(" · ") : "low match — shown anyway"}</div>
