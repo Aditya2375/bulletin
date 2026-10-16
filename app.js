@@ -11,7 +11,7 @@ const state = {
 
 const FILTERS = [["all","everything"],["soon","next 30 days"],["online","online"],["in-person","in person"],["free","free only"],["going","you’re going"]];
 const fmt = iso => new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-const overlaps = (a, b) => a.start <= b.end && b.start <= a.end;
+const overlaps = (a, b) => !!(a.start && a.end && b.start && b.end) && a.start <= b.end && b.start <= a.end;
 
 /* transparent, explainable matching — no black box */
 function score(ev) {
@@ -28,6 +28,7 @@ function score(ev) {
 
 function clash(ev) {
   if (ev.committed) return null;
+  if (!ev.start || !ev.end) return null; /* no dates, so no honest clash claim */
   const days = (new Date(ev.end) - new Date(ev.start)) / 864e5;
   if (ev.tba && days > 14) return null; /* window too broad to honestly claim a clash */
   const hit = MINE.find(m => overlaps(ev, m) && (ev.city === m.city || ev.city === "online"));
@@ -63,14 +64,14 @@ function renderBoard() {
       default: return true;
     }
   });
-  list.sort((a, b) => b.s.pts - a.s.pts || a.ev.start.localeCompare(b.ev.start));
+  list.sort((a, b) => b.s.pts - a.s.pts || (a.ev.start ? 0 : 1) - (b.ev.start ? 0 : 1) || (a.ev.start || "").localeCompare(b.ev.start || ""));
   $("#count").textContent = list.length + " listing" + (list.length === 1 ? "" : "s");
   $("#empty").hidden = list.length > 0;
   $("#board").innerHTML = list.map(({ ev, s }) => {
     const c = clash(ev);
-    const dates = ev.tba
-      ? `<span class="tba">dates TBA — ${ev.start.slice(0,4) === "2026" ? "expected in " + fmt(ev.start).split(" ")[1] : ""}</span>`
-      : `${fmt(ev.start)}${ev.end !== ev.start ? " → " + fmt(ev.end) : ""}`;
+    const dates = ev.tba || !ev.start
+      ? `<span class="tba">dates TBA — ${ev.start && ev.start.slice(0,4) === "2026" ? "expected in " + fmt(ev.start).split(" ")[1] : ""}</span>`
+      : `${fmt(ev.start)}${ev.end && ev.end !== ev.start ? " → " + fmt(ev.end) : ""}`;
     return `<article class="card ${ev.committed ? "mine" : ""}">
       <div class="src"><span>${ev.source.name}</span>${ev.committed ? '<span class="you">★ going</span>' : ""}</div>
       <h3>${ev.source.url ? `<a href="${ev.source.url}" target="_blank" rel="noopener">${ev.name}</a>` : ev.name}</h3>
@@ -124,7 +125,7 @@ let liveState = "seed";
 function rowToEvent(r) {
   return {
     id: r.id, name: r.name, org: r.org,
-    start: r.start_date, end: r.end_date, tba: !!r.tba,
+    start: r.start_date || null, end: r.end_date || null, tba: !!r.tba || !r.start_date,
     mode: r.mode, city: r.city, venue: r.venue || undefined,
     tags: r.tags || [], fee: r.fee, prize: r.prize, deadline: r.deadline,
     source: { name: r.source_name, url: r.source_url }, blurb: r.blurb
