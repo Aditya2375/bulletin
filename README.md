@@ -2,6 +2,8 @@
 
 Every hackathon, meetup and builder gathering worth your Saturday — read from a dozen sites so you read one. A Bengaluru what's-on wire for builders.
 
+Live: https://bulletin-two-weld.vercel.app
+
 ## Run it
 
 Open `index.html` in a browser, or serve the folder statically. Interests and filters live in `localStorage`.
