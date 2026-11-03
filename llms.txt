@@ -1,0 +1,2 @@
+# The Bulletin
+Cached Bengaluru event discovery reader with a browser-local tracker. Not a verified current feed. Confirm dates, fees and eligibility with sources. No source-ingestion code is included here; server automation is unverified. Personal tracker content stays in the browser. Suggestions send form data to the project database; backend permissions are unverified.
