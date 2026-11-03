@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Bulletin publisher</title>
 <style>body{font:15px/1.5 system-ui,sans-serif;max-width:720px;margin:2rem auto;padding:0 1rem}textarea{width:100%;height:220px;font:13px monospace}input{width:100%;padding:.5rem;margin:.3rem 0 1rem}button{padding:.6rem 1.2rem}pre{background:#f4f1ea;padding:.8rem;white-space:pre-wrap}</style></head>
 <body><h1>Bulletin publisher</h1>
-<p>Publishes new events to the wire. Needs the publisher token; without it every call is refused.</p>
+<p>Publishes new events to the wire. Needs the publisher token; server authorization must enforce it. That server code is not in this repository and has not been audited. Keep this page private. Never reuse an account password here.</p>
 <label for="tok">Publisher token</label><input id="tok" type="password" autocomplete="off">
 <label for="ev">Events (JSON array; keys p_name, p_source_url, p_source_name, p_start, p_end, p_tba, p_mode, p_city, p_venue, p_org, p_tags, p_fee, p_prize, p_deadline, p_blurb)</label>
 <textarea id="ev"></textarea><p><button id="go" type="button">Publish</button></p><pre id="out"></pre>
@@ -13,13 +13,18 @@ const SB_KEY="sb_publishable_bKtD9c5Q0GzMFNOZQ58z8A_WCIxbRt8";
 document.getElementById("go").addEventListener("click",async()=>{
   const out=document.getElementById("out");out.textContent="";
   let list;try{list=JSON.parse(document.getElementById("ev").value);if(!Array.isArray(list))throw 0}catch(e){out.textContent="Events must be a JSON array.";return}
-  const tok=document.getElementById("tok").value;
+  if(list.length>20 || document.getElementById('ev').value.length>50000){out.textContent='At most 20 events and 50KB per batch.';return}
+  if(list.some(ev=>!ev||typeof ev!=='object'||typeof ev.p_name!=='string'||!/^https:\/\//.test(ev.p_source_url||''))){out.textContent='Each event needs a name and HTTPS source URL.';return}
+  const tok=document.getElementById("tok").value;if(!tok){out.textContent='Publisher token required.';return}
+  const button=document.getElementById('go');button.disabled=true;
   for(const ev of list){
+    const c=new AbortController(),t=setTimeout(()=>c.abort(),15000);
     try{
-      const r=await fetch(SB_URL+"/rest/v1/rpc/ingest_event",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json","x-ingest-token":tok},body:JSON.stringify(ev)});
-      out.textContent+=(ev.p_name||"?")+" -> "+(await r.text())+"\n";
-    }catch(e){out.textContent+=(ev.p_name||"?")+" -> error "+e.message+"\n"}
+      const r=await fetch(SB_URL+"/rest/v1/rpc/ingest_event",{method:"POST",signal:c.signal,headers:{apikey:SB_KEY,"Content-Type":"application/json","x-ingest-token":tok},body:JSON.stringify(ev)});
+      if(!r.ok)throw Error('HTTP '+r.status);
+      out.textContent+=(ev.p_name||'?')+' -> accepted by server\n';
+    }catch(e){out.textContent+=(ev.p_name||"?")+" -> delivery unconfirmed, batch stopped. Do not retry automatically.\n";break}finally{clearTimeout(t)}
   }
-  out.textContent+="DONE\n";
+  document.getElementById("tok").value="";button.disabled=false;out.textContent+="Batch ended. Verify server records before any retry.\n";
 });
 </script></body></html>
