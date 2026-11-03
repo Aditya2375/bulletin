@@ -11,23 +11,23 @@
   const $ = s => document.querySelector(s);
   const label = v => (STATUSES.find(s => s[0] === v) || [0, v])[1];
   const clean = (v, n) => String(v == null ? "" : v).replace(/[\u0000-\u001f]/g, " ").trim().slice(0, n);
-  const isDate = v => /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(new Date(v + "T00:00:00"));
+  const isDate = v => /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(Date.parse(v)) && new Date(v).toISOString().slice(0,10)===v;
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const today = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); };
   const days = iso => Math.round((new Date(iso + "T00:00:00") - today()) / 864e5);
 
   function load() {
     try {
-      const raw = JSON.parse(localStorage.getItem(KEY) || "[]");
+      const text=localStorage.getItem(KEY)||"[]";if(text.length>1000000)return [];const raw = JSON.parse(text);
       if (!Array.isArray(raw)) return [];
-      return raw.filter(r => r && typeof r === "object" && clean(r.name, 120)).map(r => ({
+      return raw.slice(0,500).filter(r => r && typeof r === "object" && clean(r.name, 120)).map(r => ({
         id: clean(r.id, 40) || String(Date.now() + Math.random()),
         name: clean(r.name, 120),
         status: STATUSES.some(s => s[0] === r.status) ? r.status : "interested",
         date: isDate(r.date) ? r.date : "",
         deadline: isDate(r.deadline) ? r.deadline : "",
         team: clean(r.team, 80),
-        link: /^https?:\/\//i.test(r.link || "") ? clean(r.link, 600) : "",
+        link: safeURL(clean(r.link,600)),
         note: clean(r.note, 200)
       }));
     } catch (e) { return []; }
@@ -96,14 +96,15 @@
     e.preventDefault();
     const rec = {
       name: clean($("#tr-name").value, 120),
-      status: $("#tr-status").value,
+      status: STATUSES.some(s=>s[0]===$("#tr-status").value)?$("#tr-status").value:"interested",
       date: isDate($("#tr-date").value) ? $("#tr-date").value : "",
       deadline: isDate($("#tr-deadline").value) ? $("#tr-deadline").value : "",
       team: clean($("#tr-team").value, 80),
-      link: /^https?:\/\//i.test($("#tr-link").value.trim()) ? clean($("#tr-link").value, 600) : "",
+      link: safeURL(clean($("#tr-link").value,600)),
       note: clean($("#tr-note").value, 200)
     };
     if (!rec.name) return;
+    if(!editing && items.length>=500){$("#tr-warn").hidden=false;$("#tr-warn").textContent="500 item limit. Export your tracker before adding more.";return}
     if ($("#tr-link").value.trim() && !rec.link) { $("#tr-link").setCustomValidity("Start the link with https://"); $("#tr-link").reportValidity(); return; }
     if (editing) { const i = items.findIndex(x => x.id === editing); if (i > -1) items[i] = { id: editing, ...rec }; }
     else items.push({ id: "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ...rec });
@@ -122,7 +123,7 @@
     }
     if (b.dataset.act === "copy") {
       const done = () => { b.textContent = "copied"; setTimeout(() => { if (b.isConnected) b.textContent = "copy"; }, 1500); };
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(it.team).then(done, () => {});
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(it.team).then(done, () => {b.textContent="select code to copy"});
     }
   });
   $("#tr-list").addEventListener("change", e => {
@@ -149,5 +150,5 @@
     $("#tracker").scrollIntoView({ behavior: "smooth", block: "start" });
     $("#tr-name").focus();
   };
-  render();
+  render();setInterval(render,60000);
 })();
