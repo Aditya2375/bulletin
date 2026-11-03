@@ -1,17 +1,23 @@
 /* The Bulletin — board, matching, clash detection. */
 const $ = s => document.querySelector(s);
-let ALL = [...EVENTS, ...MINE];
+const esc = v => String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safeURL = v => {try{const u=new URL(v);return ['https:','http:'].includes(u.protocol)&&!u.username&&!u.password?u.href:''}catch{return ''}};
+const dateOK = v => typeof v==='string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(Date.parse(v)) && new Date(v).toISOString().slice(0,10)===v;
+const localDate = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const readPref = (key,fallback) => {try{return localStorage.getItem(key)??fallback}catch{return fallback}};
+const prefInterests = () => {try{const a=JSON.parse(readPref('bul.interests','["ai","hackathon","web"]'));return Array.isArray(a)?a.filter(t=>INTERESTS.includes(t)):['ai','hackathon','web']}catch{return ['ai','hackathon','web']}};
+let ALL = [...EVENTS];
 
 const state = {
-  interests: new Set(JSON.parse(localStorage.getItem("bul.interests") || '["ai","hackathon","web"]')),
-  place: localStorage.getItem("bul.place") || "bengaluru",
+  interests: new Set(prefInterests()),
+  place: ["bengaluru","online","online-or-bengaluru"].includes(readPref("bul.place","")) ? readPref("bul.place","") : "bengaluru",
   q: "",
   filter: "all"
 };
 
-const FILTERS = [["all","everything"],["soon","next 30 days"],["online","online"],["in-person","in person"],["free","free only"],["going","you’re going"]];
+const FILTERS = [["all","everything"],["soon","next 30 days"],["online","online"],["in-person","in person"],["free","free only"]];
 const fmt = iso => new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-const overlaps = (a, b) => a.start <= b.end && b.start <= a.end;
+const overlaps = (a, b) => !!(a.start && a.end && b.start && b.end) && a.start <= b.end && b.start <= a.end;
 
 /* transparent, explainable matching — no black box */
 function score(ev) {
@@ -28,6 +34,7 @@ function score(ev) {
 
 function clash(ev) {
   if (ev.committed) return null;
+  if (!ev.start || !ev.end) return null; /* no dates, so no honest clash claim */
   const days = (new Date(ev.end) - new Date(ev.start)) / 864e5;
   if (ev.tba && days > 14) return null; /* window too broad to honestly claim a clash */
   const hit = MINE.find(m => overlaps(ev, m) && (ev.city === m.city || ev.city === "online"));
@@ -48,14 +55,14 @@ function renderChips() {
 }
 
 function renderBoard() {
-  const now = "2026-09-27";
-  const soonEnd = "2026-10-27";
+  const now = localDate(new Date());
+  const end=new Date();end.setDate(end.getDate()+30);const soonEnd=localDate(end);
   let list = ALL.map(ev => ({ ev, s: score(ev) }));
   const q = state.q.trim().toLowerCase();
   if (q) list = list.filter(({ ev }) => (ev.name + " " + ev.org + " " + ev.blurb + " " + ev.tags.join(" ")).toLowerCase().includes(q));
   list = list.filter(({ ev }) => {
     switch (state.filter) {
-      case "soon": return !ev.tba && ev.start <= soonEnd;
+      case "soon": return !ev.tba && ev.start && (ev.end||ev.start)>=now && ev.start<=soonEnd;
       case "online": return ev.mode === "online";
       case "in-person": return ev.mode === "in-person" && ev.city === "bengaluru";
       case "free": return ev.fee === "free";
@@ -63,19 +70,22 @@ function renderBoard() {
       default: return true;
     }
   });
-  list.sort((a, b) => b.s.pts - a.s.pts || a.ev.start.localeCompare(b.ev.start));
+  list.sort((a, b) => b.s.pts - a.s.pts || (a.ev.start ? 0 : 1) - (b.ev.start ? 0 : 1) || (a.ev.start || "").localeCompare(b.ev.start || ""));
   $("#count").textContent = list.length + " listing" + (list.length === 1 ? "" : "s");
   $("#empty").hidden = list.length > 0;
-  $("#board").innerHTML = list.map(({ ev, s }) => {
-    const c = clash(ev);
-    const dates = ev.tba
-      ? `<span class="tba">dates TBA — ${ev.start.slice(0,4) === "2026" ? "expected in " + fmt(ev.start).split(" ")[1] : ""}</span>`
-      : `${fmt(ev.start)}${ev.end !== ev.start ? " → " + fmt(ev.end) : ""}`;
+  $("#board").innerHTML = list.map(({ ev: raw, s }) => {
+    const c = esc(clash(raw)||'');
+    const ev=Object.fromEntries(Object.entries(raw).map(([k,v])=>[k,typeof v==='string'?esc(v):v]));
+    ev.source={name:esc(raw.source.name),url:esc(safeURL(raw.source.url))};ev.tags=raw.tags.map(esc);
+    s={...s,why:s.why.map(esc)};
+    const dates = ev.tba || !ev.start
+      ? `<span class="tba">dates unconfirmed - check source</span>`
+      : `${fmt(ev.start)}${ev.end && ev.end !== ev.start ? " → " + fmt(ev.end) : ""}`;
     return `<article class="card ${ev.committed ? "mine" : ""}">
       <div class="src"><span>${ev.source.name}</span>${ev.committed ? '<span class="you">★ going</span>' : ""}</div>
       <h3>${ev.source.url ? `<a href="${ev.source.url}" target="_blank" rel="noopener">${ev.name}</a>` : ev.name}</h3>
-      <div class="date">${dates}</div>
-      <div class="meta"><span>${ev.mode}${ev.venue ? " · " + ev.venue : ev.city !== "online" ? " · " + ev.city : ""}</span><span>fee: ${ev.fee}</span>${ev.prize !== "—" ? `<span>${ev.prize}</span>` : ""}<span>reg: ${ev.deadline}</span></div>
+      <div class="date">${dates}${raw.end && raw.end < now ? " · PAST" : ""}</div><div class="mono">UNVERIFIED CACHED LISTING</div>
+      <div class="meta"><span>${ev.mode}${ev.venue ? " · " + ev.venue : ev.city !== "online" ? " · " + ev.city : ""}</span><span>fee: ${ev.fee}</span>${ev.prize !== "—" ? `<span>${ev.prize}</span>` : ""}${ev.deadline && ev.deadline !== "null" ? `<span>reg: ${ev.deadline}</span>` : ""}</div>
       <p class="blurb">${ev.blurb}</p>
       <div class="tags">${ev.tags.map(t => `<span class="tag">#${t}</span>`).join("")}</div>
       <div class="why">why this: ${s.why.length ? s.why.join(" · ") : "low match — shown anyway"}</div>
@@ -102,8 +112,7 @@ function renderSources() {
 }
 
 function save() {
-  localStorage.setItem("bul.interests", JSON.stringify([...state.interests]));
-  localStorage.setItem("bul.place", state.place);
+  try{localStorage.setItem("bul.interests", JSON.stringify([...state.interests]));localStorage.setItem("bul.place",state.place)}catch{$("#pref-status").textContent="Preferences exist in this tab only; browser saving failed."}
 }
 
 document.addEventListener("click", e => {
@@ -122,62 +131,43 @@ const SB_KEY = "sb_publishable_bKtD9c5Q0GzMFNOZQ58z8A_WCIxbRt8";
 let liveState = "seed";
 
 function rowToEvent(r) {
-  return {
-    id: r.id, name: r.name, org: r.org,
-    start: r.start_date, end: r.end_date, tba: !!r.tba,
-    mode: r.mode, city: r.city, venue: r.venue || undefined,
-    tags: r.tags || [], fee: r.fee, prize: r.prize, deadline: r.deadline,
-    source: { name: r.source_name, url: r.source_url }, blurb: r.blurb
-  };
+  const text=(v,n)=>typeof v==='string'?v.slice(0,n):'';
+  if(!r||typeof r!=='object'||!text(r.name,300)||!safeURL(r.source_url)||!['online','in-person','hybrid'].includes(r.mode))return null;
+  const start=dateOK(r.start_date)?r.start_date:null,end=dateOK(r.end_date)?r.end_date:start;
+  return {id:text(String(r.id??''),100).replace(/[^a-zA-Z0-9_-]/g,''),name:text(r.name,300),org:text(r.org,300),start,end:end&&start&&end<start?start:end,tba:!!r.tba||!start,mode:r.mode,city:text(r.city,100),venue:text(r.venue,200),tags:Array.isArray(r.tags)?r.tags.filter(t=>typeof t==='string').slice(0,12).map(t=>t.slice(0,40)):[],fee:text(r.fee,100),prize:text(r.prize,300),deadline:text(r.deadline,100),source:{name:text(r.source_name,100),url:safeURL(r.source_url)},blurb:text(r.blurb,1500)};
 }
-
+async function request(url,options={}){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);try{const r=await fetch(url,{...options,signal:controller.signal});if(!r.ok)throw Error('HTTP '+r.status);const text=await r.text();if(text.length>1500000)throw Error('Response too large');return text?JSON.parse(text):null}finally{clearTimeout(timer)}}
 function renderDatapill() {
   const el = $("#datapill");
-  if (el) el.textContent = liveState === "live" ? "· live from the wire db" : "· offline seed cache";
+  if (el) el.textContent = liveState === "live" ? "· database cache, not source-verified" : "· offline archive, not current listings";
 }
 
 async function loadLive() {
   try {
-    const r = await fetch(SB_URL + "/rest/v1/events?select=*", { headers: { apikey: SB_KEY } });
-    if (!r.ok) throw new Error("events " + r.status);
-    const rows = await r.json();
-    if (!Array.isArray(rows) || !rows.length) throw new Error("empty wire");
-    ALL = [...rows.map(rowToEvent), ...MINE];
+    const rows=await request(SB_URL+"/rest/v1/events?select=*&limit=100",{headers:{apikey:SB_KEY}});
+    if(!Array.isArray(rows))throw Error('Invalid event list');
+    ALL=rows.slice(0,100).map(rowToEvent).filter(Boolean);
     liveState = "live";
   } catch (e) {
     liveState = "seed";
   }
+  window.bulletinLoaded=true;
   renderDatapill();
   renderBoard();
 }
 
-$("#suggest-form").addEventListener("submit", async e => {
-  e.preventDefault();
-  const st = $("#suggest-status");
-  const body = {
-    name: $("#sg-name").value.trim(),
-    url: $("#sg-url").value.trim(),
-    city: $("#sg-city").value.trim() || null,
-    start_date: $("#sg-date").value || null,
-    note: $("#sg-note").value.trim() || null
-  };
-  if (body.name.length < 2) { st.textContent = "name's too short"; return; }
-  if (!/^https?:\/\//.test(body.url)) { st.textContent = "url needs to start with https://"; return; }
-  st.textContent = "sending…";
-  try {
-    const r = await fetch(SB_URL + "/rest/v1/submissions", {
-      method: "POST",
-      headers: { apikey: SB_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
-      body: JSON.stringify(body)
-    });
-    if (!r.ok) throw new Error("rejected (" + r.status + ")");
-    st.textContent = "in the review queue — thanks";
-    e.target.reset();
-  } catch (err) {
-    st.textContent = "couldn't send: " + err.message;
-  }
+let submitting=false;
+$("#suggest-form").addEventListener("submit",async e=>{
+ e.preventDefault();if(submitting)return;const st=$("#suggest-status"),button=e.target.querySelector('[type=submit]');
+ const body={name:$("#sg-name").value.trim(),url:safeURL($("#sg-url").value.trim()),city:$("#sg-city").value.trim()||null,start_date:$("#sg-date").value||null,note:$("#sg-note").value.trim()||null};
+ if(body.name.length<2||body.name.length>300||!body.url||(body.start_date&&!dateOK(body.start_date))){st.textContent='Check the name, date and HTTP(S) listing URL.';return}
+ submitting=true;button.disabled=true;st.textContent='Sending once...';
+ try{await request(SB_URL+'/rest/v1/submissions',{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify(body)});st.textContent='Server accepted the suggestion for review.';e.target.reset()}
+ catch{st.textContent='Delivery unconfirmed. It may have reached the queue; do not resend automatically.'}
+ finally{submitting=false;button.disabled=false}
 });
-
 $("#dateline").textContent = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 renderChips(); renderBoard(); renderOutlinks(); renderSources(); renderDatapill();
 loadLive();
+
+setInterval(()=>{renderBoard();$("#dateline").textContent=new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"})},60000);
