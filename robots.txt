@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /ingest.html
+Sitemap: https://bulletin-two-weld.vercel.app/sitemap.xml
