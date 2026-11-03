@@ -1,15 +1,11 @@
 /* The Bulletin — seed registry + source adapters.
-   Every listing below was checked against its public source page on 27 Sept 2026.
+   Historical archive: marked checked on 27 Sept 2026 by the prior version. Not currently verified.
    `tba: true` means the source had not published firm dates at that time — the card
-   says so rather than inventing one. `committed: true` entries are neutral example plans,
-   included so clash detection has something to check against. Edit COMMITTED to make them yours. */
+   says so rather than inventing one. No personal attendance is assumed. */
 
 const INTERESTS = ["ai", "hackathon", "web", "open-source", "cp", "design", "startups", "hardware"];
 
-const COMMITTED = [
-  { name: "Example plan: a weekend hackathon", start: "2026-10-24", end: "2026-10-25", place: "bengaluru" },
-  { name: "Example plan: an online build week", start: "2026-10-09", end: "2026-10-15", place: "online" }
-];
+const COMMITTED = []; // No personal attendance is assumed.
 
 const EVENTS = [
   {
@@ -135,22 +131,13 @@ const EVENTS = [
 ];
 
 /* Committed events, rendered as such so clashes are visible. */
-const MINE = COMMITTED.map((c, i) => ({
-  id: "mine-" + i, name: c.name, org: "your stated plans",
-  start: c.start, end: c.end, tba: false,
-  mode: c.place === "bengaluru" ? "in-person" : "in-person", city: c.place,
-  tags: ["hackathon"], fee: "—", prize: "—", deadline: "—",
-  source: { name: "Going", url: "" }, committed: true,
-  blurb: "You said you're going — so the wire checks everything else against this."
-}));
+const MINE = []; // No authenticated attendance plans supplied.
 
 /* Source adapters: what the wire reads today and what live ingestion needs. */
 const SOURCES = [
-  { name: "Luma", status: "seeded", needs: "No public REST API; ingestion via each event’s .ics export or the Luma calendar feed. An adapter can poll subscribed calendars hourly.", url: "https://luma.com/bengaluru" },
-  { name: "Unstop", status: "seeded", needs: "No public API for third parties. Live mode needs a polite scraper with caching + their robots/terms respected, or a partner agreement.", url: "https://unstop.com/hackathons" },
-  { name: "Devpost", status: "seeded", needs: "Hackathon listings are public pages; a scraper or RSS watch works. No official API.", url: "https://devpost.com/hackathons" },
-  { name: "MLH", status: "seeded", needs: "events.mlh.io publishes listings and many events expose .ics; adapter can poll the season page.", url: "https://mlh.io/seasons/2026/events" },
-  { name: "Internshala", status: "seeded", needs: "Public competition pages; scraper adapter with cache. No official API.", url: "https://internshala.com/competitions/" },
-  { name: "Meetup", status: "adapter-spec", needs: "Official GraphQL API — needs a Meetup Pro/OAuth key. Adapter is specced in README; drop a key in config to go live.", url: "https://www.meetup.com/api/" },
-  { name: "Eventbrite", status: "adapter-spec", needs: "Official REST API — needs a private token. Specced in README; drop a key in config to go live.", url: "https://www.eventbrite.com/platform/api" }
+ {name:'Luma',status:'seeded',needs:'Discovery link only. No automatic ingestion adapter is implemented.',url:'https://luma.com/bengaluru'},
+ {name:'Unstop',status:'seeded',needs:'Discovery link only. Check current dates, fees and eligibility with the organizer.',url:'https://unstop.com/hackathons'},
+ {name:'Devpost',status:'seeded',needs:'Discovery link only. No scraping or API connection is configured.',url:'https://devpost.com/hackathons'},
+ {name:'MLH',status:'seeded',needs:'Discovery link only. This reader does not poll source listings.',url:'https://mlh.io/seasons/2026/events'},
+ {name:'Internshala',status:'seeded',needs:'Discovery link only. Cached records may be outdated.',url:'https://internshala.com/competitions/'}
 ];
