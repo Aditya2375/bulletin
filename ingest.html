@@ -15,6 +15,8 @@ document.getElementById("go").addEventListener("click",async()=>{
   let list;try{list=JSON.parse(document.getElementById("ev").value);if(!Array.isArray(list))throw 0}catch(e){out.textContent="Events must be a JSON array.";return}
   if(list.length>20 || document.getElementById('ev').value.length>50000){out.textContent='At most 20 events and 50KB per batch.';return}
   if(list.some(ev=>!ev||typeof ev!=='object'||typeof ev.p_name!=='string'||!/^https:\/\//.test(ev.p_source_url||''))){out.textContent='Each event needs a name and HTTPS source URL.';return}
+  const limits={p_name:300,p_source_url:600,p_source_name:100,p_city:100,p_venue:300,p_org:200,p_fee:100,p_prize:200,p_deadline:200,p_blurb:2000};
+  for(const ev of list){for(const [k,max] of Object.entries(limits)){if(ev[k]!=null&&(typeof ev[k]!=='string'||ev[k].length>max)){out.textContent=k+' must be text of at most '+max+' characters. Nothing sent.';return}}if(!['online','in-person','hybrid'].includes(ev.p_mode)||!Array.isArray(ev.p_tags)||ev.p_tags.length>8){out.textContent='Check event mode and at most 8 tags. Nothing sent.';return}}
   const tok=document.getElementById("tok").value;if(!tok){out.textContent='Publisher token required.';return}
   const button=document.getElementById('go');button.disabled=true;
   for(const ev of list){
@@ -22,7 +24,13 @@ document.getElementById("go").addEventListener("click",async()=>{
     try{
       const r=await fetch(SB_URL+"/rest/v1/rpc/ingest_event",{method:"POST",signal:c.signal,headers:{apikey:SB_KEY,"Content-Type":"application/json","x-ingest-token":tok},body:JSON.stringify(ev)});
       if(!r.ok)throw Error('HTTP '+r.status);
-      out.textContent+=(ev.p_name||'?')+' -> accepted by server\n';
+      const result=await r.json();
+      if(!['added','duplicate'].includes(result)){out.textContent+=(ev.p_name||'?')+' -> not published: '+String(result).slice(0,240)+'\n';break}
+      const u=new URL(SB_URL+'/rest/v1/events');u.searchParams.set('select','id,name,source_url');u.searchParams.set('source_url','eq.'+ev.p_source_url);u.searchParams.set('limit','2');
+      const check=await fetch(u,{signal:c.signal,headers:{apikey:SB_KEY},cache:'no-store'});
+      if(!check.ok)throw Error('Read-back HTTP '+check.status);const rows=await check.json();
+      if(!Array.isArray(rows)||!rows.some(x=>x.name===ev.p_name&&x.source_url===ev.p_source_url)){out.textContent+=(ev.p_name||'?')+' -> '+result+' reported, but exact listing not verified. Batch stopped.\n';break}
+      out.textContent+=(ev.p_name||'?')+' -> '+(result==='added'?'published and verified':'already present and verified')+'\n';
     }catch(e){out.textContent+=(ev.p_name||"?")+" -> delivery unconfirmed, batch stopped. Do not retry automatically.\n";break}finally{clearTimeout(t)}
   }
   document.getElementById("tok").value="";button.disabled=false;out.textContent+="Batch ended. Verify server records before any retry.\n";
