@@ -18,7 +18,8 @@
   <h1>The Bulletin</h1>
   <p class="dekk">A Bengaluru event archive and a private tracker for the things you want to build.</p>
   <div class="rule"></div>
-  <p class="record mono">On the record: this is a cached archive, not a verified current event feed. The seed records were last marked checked on 27 Sept 2026; database access does not mean source dates are fresh. Confirm dates, fees, eligibility and registration on the original listing. No attendance plans are assumed. No ingestion adapter source is included in this repo; server automation is unverified.</p>
+  <p class="record mono">Listings come from the event database when it is reachable. Database delivery is not source verification: confirm dates, fees, eligibility and registration with each organizer. If the database cannot be reached, the page clearly labels its older offline seed. No attendance plans are assumed.</p>
+  <div class="feed-status mono"><p id="feed-status" role="status" aria-live="polite">Loading the event database. The offline seed is shown until it responds.</p><button id="feed-retry" type="button" disabled>Loading listings...</button></div>
 </header>
 
 <nav class="controls" id="controls">

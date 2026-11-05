@@ -128,7 +128,7 @@ $("#q").addEventListener("input", e => { clearTimeout(deb); deb = setTimeout(() 
 /* ————— live wire database (Supabase) with baked seed as offline fallback ————— */
 const SB_URL = "https://iljapbrjcxhtymtkiuea.supabase.co";
 const SB_KEY = "sb_publishable_bKtD9c5Q0GzMFNOZQ58z8A_WCIxbRt8";
-let liveState = "seed";
+let liveState = "loading", feedBusy = false, feedError = "", lastFeedRead = "";
 
 function rowToEvent(r) {
   const text=(v,n)=>typeof v==='string'?v.slice(0,n):'';
@@ -138,23 +138,45 @@ function rowToEvent(r) {
 }
 async function request(url,options={}){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);try{const r=await fetch(url,{...options,signal:controller.signal});if(!r.ok)throw Error('HTTP '+r.status);const text=await r.text();if(text.length>1500000)throw Error('Response too large');return text?JSON.parse(text):null}finally{clearTimeout(timer)}}
 function renderDatapill() {
-  const el = $("#datapill");
-  if (el) el.textContent = liveState === "live" ? "· database cache, not source-verified" : "· offline archive, not current listings";
+  const live = liveState === "live";
+  $("#datapill").textContent = feedBusy ? (live ? "· refreshing database listings" : "· loading database listings") : live ? "· database listings, not source-verified" : "· offline seed, not current listings";
+  const source = live ? `${ALL.length} database listings loaded at ${lastFeedRead}. This is the time of this database read, not when organizers last verified the events.` : `Showing ${EVENTS.length} offline seed listings, last marked checked on 27 Sept 2026. These are not current listings.`;
+  $("#feed-status").textContent = feedBusy ? (live ? "Refreshing listings. The last successful database read remains visible." : "Loading the event database. The offline seed remains visible until it responds.") : source + (feedError ? ` Latest refresh failed: ${feedError} Use Retry database to try again.` : "");
+  $("#feed-retry").disabled = feedBusy;
+  $("#feed-retry").textContent = feedBusy ? "Loading listings..." : feedError || !live ? "Retry database" : "Refresh listings";
 }
-
+function feedFailure(e) {
+  if (e && e.name === "AbortError") return "the request timed out after 15 seconds.";
+  if (e && /^HTTP \d{3}$/.test(e.message)) return `the database returned ${e.message}.`;
+  if (e && e.message === "Response too large") return "the database response exceeded the safe size limit.";
+  if (e && e.message === "Invalid event list") return "the database returned an invalid event list.";
+  if (e instanceof SyntaxError) return "the database response could not be read as JSON.";
+  return "the network request did not complete. Your connection or the database may be unavailable.";
+}
 async function loadLive() {
-  try {
-    const rows=await request(SB_URL+"/rest/v1/events?select=*&limit=100",{headers:{apikey:SB_KEY}});
-    if(!Array.isArray(rows))throw Error('Invalid event list');
-    ALL=rows.slice(0,100).map(rowToEvent).filter(Boolean);
-    liveState = "live";
-  } catch (e) {
-    liveState = "seed";
-  }
-  window.bulletinLoaded=true;
+  if (feedBusy) return;
+  feedBusy = true;
   renderDatapill();
-  renderBoard();
+  try {
+    const rows = await request(SB_URL+"/rest/v1/events?select=*&limit=100",{headers:{apikey:SB_KEY}});
+    if (!Array.isArray(rows)) throw Error("Invalid event list");
+    const clean = rows.slice(0,100).map(rowToEvent).filter(Boolean);
+    if (rows.length && !clean.length) throw Error("Invalid event list");
+    ALL = clean;
+    liveState = "live";
+    lastFeedRead = new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+    feedError = "";
+  } catch (e) {
+    feedError = feedFailure(e);
+    if (liveState !== "live") liveState = "seed";
+  } finally {
+    feedBusy = false;
+    window.bulletinLoaded = true;
+    renderDatapill();
+    renderBoard();
+  }
 }
+$("#feed-retry").addEventListener("click",loadLive);
 
 let submitting=false;
 $("#suggest-form").addEventListener("submit",async e=>{
